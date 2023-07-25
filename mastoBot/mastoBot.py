@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Callable
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -17,10 +17,13 @@ from mastodon import (
 from .configManager import *
 
 
-def handleMastodonExceptions(func):
+def handleMastodonExceptions(func) -> Callable:
     def wrapper(self, *args, **kwargs):
         try:
             result = func(self, *args, **kwargs)
+            return result
+        except MastodonServerError as e:
+            logging.critical(f"MastodonServerError: {e}")
         except MastodonIllegalArgumentError as e:
             logging.critical(f"MastodonIllegalArgumentError: {e}")
         except MastodonFileNotFoundError as e:
@@ -33,18 +36,12 @@ def handleMastodonExceptions(func):
             logging.critical(f"MastodonMalformedEventError: {e}")
         except MastodonRatelimitError as e:
             logging.critical(f"MastodonRatelimitError: {e}")
-        except MastodonServerError as e:
-            logging.critical(f"MastodonServerError: {e}")
         except MastodonVersionError as e:
             logging.critical(f"MastodonVersionError: {e}")
         except Exception as e:
             logging.critical(f"Error in function {func.__name__}")
             raise e
-
-        return result
-
     return wrapper
-
 
 class MastoBot(ABC):
     """
@@ -60,6 +57,7 @@ class MastoBot(ABC):
     credentials: ConfigAccessor
         The credentials used for API and database access of the user
     """
+    DEFAULT_REFRESH_RATE = 10 # Sleep time in seconds
 
     def __init__(self, config: ConfigAccessor, credentials: ConfigAccessor) -> None:
         """
@@ -75,39 +73,59 @@ class MastoBot(ABC):
         -------
         None
         """
-        self.config = config
-        self.credentials = credentials
+        
+        self.refresh_rate = self.DEFAULT_REFRESH_RATE
+        
+        try:
+            self.config = config
+            self.credentials = credentials
+            logging.info("✅ \t Config and credentials initialized")
+        except Exception as e:
+            logging.info("❌ \t Config and credentials failed to initialized")
+            raise e
 
         try:
             self._api = Mastodon(
                 access_token=self.credentials.get("access_token"),
                 api_base_url=self.credentials.get("api_base_url"),
-                request_timeout=self.config.get("api").get("timeout"),
+                request_timeout=self.config.get("api", {}).get("timeout", 10),
             )
-            logging.info("Mastodon API initialized successfully.")
+            logging.info("✅ \t Mastodon.py initialized")
         except Exception as e:
-            logging.critical("Failed to initialize Mastodon API: {0}".format(e))
+            logging.critical("❌ \t Mastodon.py failed to initialized")
             raise e
 
+    @property
+    def refresh_rate(self):
+        return self._refresh_rate
+    
+    @refresh_rate.setter
+    def refresh_rate(self, value):
+        if value <= 0: 
+            logging.warning("❌ \t Refresh rate should be greater than 0")
+            raise ValueError("Refresh rate should be greater than 0")
+        
+        try:
+            logging.info(f"⌛ \t Refresh rate set to: {value}")
+            self._refresh_rate = int(value)
+        except:
+            logging.warning("❌ \t Invalid refresh rate specified")
+    
     def run(self):
+        logging.info("⛏️ \t Starting main loop")
         while True:
-            logging.info("Starting run_loop")
-
             notifications = self._fetch_notifications()
             self._process_notifications(notifications)
-
-            logging.info("Ending run_loop")
-            time.sleep(10)
+            time.sleep(self.refresh_rate)
 
     @handleMastodonExceptions
     def _fetch_notifications(self):
-        logging.debug("Starting notification_fetch")
         notifications = self._api.notifications()
-        logging.debug(f"Ending notification_fetch: {len(notifications)} Notifications")
+        logging.debug(f"📬 \t {len(notifications)} Notifications fetched")
         return notifications
 
     @handleMastodonExceptions
-    def _process_notifications(self, notifications: List[Dict]):
+    def _process_notifications(self, notifications: List[Dict[Any, Any]]) -> None:
         for notification in notifications:
             if notification.get("type") == "mention":
                 self.processMention(notification)
@@ -122,7 +140,7 @@ class MastoBot(ABC):
             elif notification.get("type") == "follow_request":
                 self.processFollowRequest(notification)
             else:
-                pass
+                logging.warning(f"❗ \t Invalid notification type: {notification.get('type')}")
 
     @handleMastodonExceptions
     def getAccount(self, account_id: int) -> Dict:
@@ -154,65 +172,21 @@ class MastoBot(ABC):
 
     @handleMastodonExceptions
     def getAccountStatuses(self) -> List[Dict]:
-        logging.info("Starting account notification fetch")
         result = self._api.account_statuses(self.getMe().get("id"))
         statuses = []
-        # Use the received page to get the next page from the API
         while result is not None:
             statuses.extend(result)
             result = self._api.fetch_next(result)
-
-        logging.info(f"Fetched {len(statuses)} statuses")
         return statuses
 
     @handleMastodonExceptions
     def dismissNotification(self, notification_id: int) -> None:
-        self._api.notifications_dismiss(notification_id)
-
-    @handleMastodonExceptions
-    def fetchNotifications(self):
-        """
-        Fetch new notifications from the Mastodon API and add them to the database
-
-        Parameters
-        ----------
-        None
-
-        Raises
-        ------
-        None
-
-        Returns
-        -------
-        None
-        """
         try:
-            api_new_notifications = self.getNotifications()
-            logging.info(
-                f"Fetched {len(api_new_notifications)} new notifications from API"
-            )
-        except Exception as e:
-            logging.warning(
-                "Failed to fetch new notifications from API"
-            )  # ConnectionResetError:
-            raise e
-
-        # Process new notifications
-        for notification in api_new_notifications:
-            try:
-                api_user = self.getAccount(notification.get("account").get("id"))
-                self.createLocalUser(api_user)  # Add user
-
-                self.createLocalNotification(notification)
-                self.dismissNotification(notification.get("id"))  # Dismiss notification
-
-            except Exception as e:
-                logging.warning(
-                    f"Error while processing {notification.get('type')} notification {notification.get('id')}"
-                )
-                raise e
-
-        logging.info("Fetch completed")
+            self._api.notifications_dismiss(notification_id)
+            logging.info(f"📭 \t Notification {notification_id} dismissed")
+        except:
+            logging.info(f"❗ \t Failed to dismiss Notification: {notification_id}")
+            raise
 
     @handleMastodonExceptions
     def reblogStatus(self, status_id: int):
@@ -234,9 +208,9 @@ class MastoBot(ABC):
         """
         try:
             self._api.status_reblog(status_id)
-            logging.info(f"Status reblogged: {status_id}")
+            logging.info(f"🗣️ \t Status reblogged: {status_id}")
         except Exception as e:
-            logging.error(f"Failed to reblog status: {status_id}")
+            logging.error(f"❗ \t Failed to reblog status: {status_id}")
             raise e
 
     @handleMastodonExceptions
@@ -259,31 +233,31 @@ class MastoBot(ABC):
         """
         try:
             self._api.status_favourite(status_id)
-            logging.info(f"Status favorited: {status_id}")
+            logging.info(f"⭐ \t Status favorited: {status_id}")
         except Exception as e:
-            logging.error(f"Failed to favorite status: {status_id}")
+            logging.error(f"❗ \t Failed to favorite status: {status_id}")
             raise e
 
     @abstractmethod
-    def processMention(mention: Dict):
+    def processMention(self, mention: Dict) -> None:
         ...
 
     @abstractmethod
-    def processReblog(reblog: Dict):
+    def processReblog(self, reblog: Dict) -> None:
         ...
 
     @abstractmethod
-    def processFavourite(favourite: Dict):
+    def processFavourite(self, favourite: Dict) -> None:
         ...
 
     @abstractmethod
-    def processFollow(follow: Dict):
+    def processFollow(self, follow: Dict) -> None:
         ...
 
     @abstractmethod
-    def processPoll(poll: Dict):
+    def processPoll(self, poll: Dict) -> None:
         ...
 
     @abstractmethod
-    def processFollowRequest(follow_request: Dict):
+    def processFollowRequest(self, follow_request: Dict) -> None:
         ...
