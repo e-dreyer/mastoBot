@@ -5,8 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "${WORKER_PORT}:${WORKER_PORT}"
     volumes:
       - .:/app
     command: ["python3", "main.py"]
