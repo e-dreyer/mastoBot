@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+  mastodon-bot-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${WORKER_PORT}:${WORKER_PORT}"
+    volumes:
+      - .:/app
+    command: ["python3", "main.py"]
+    networks:
+      - mastodon-bot-network
+
+networks:
+  mastodon-bot-network:
