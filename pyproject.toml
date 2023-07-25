@@ -10,7 +10,7 @@ keywords = ["mastodon", "api", "bot"]
 authors = [
   { name="Erik Dreyer", email="erik.dreyer@protonmail.com" },
 ]
-license = "GNU General Public License v3 (GPLv3)"
+license = "GNU"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
