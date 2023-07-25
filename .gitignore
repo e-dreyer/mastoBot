@@ -8,6 +8,7 @@ venv*
 pytooter_clientcred.secret
 
 credentials.yml
+config.yml
 
 *.log
 *.sqlite
