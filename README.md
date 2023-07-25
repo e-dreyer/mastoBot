@@ -34,15 +34,15 @@ For simplicity the main focus of this bot has been to develop it to run in `Dock
 
 To start, first install this package in your project
 
-    ```bash
-    pip install git+https://github.com/e-dreyer/mastoBot
-    ```
+```bash
+pip install git+https://github.com/e-dreyer/mastoBot
+```
 
 The pip installation can then be frozen to create a requirements file
 
-    ```bash
-    pip freeze > requirements.txt
-    ```
+```bash
+pip freeze > requirements.txt
+```
 
 From here the package can simply be imported and used.
 
@@ -52,97 +52,97 @@ Start by first copying the `credentials.yml` and `config.yml` files from the exa
 
 Import the following modules and packages:
 
-    ```python
-    from mastoBot.configManager import ConfigAccessor
-    from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
-    ```
+```python
+from mastoBot.configManager import ConfigAccessor
+from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
+```
 
 Then create a new class inheriting from `MastoBot`. The following code can be copied directly. Each of these functions are required to be implemented and will automatically be executed for all notifications received over the Mastodon API. Thus, you can specify the behavior for each type of notification.
 
-    ```python
-    class MyBot(MastoBot):
-        @handleMastodonExceptions
-        def processMention(self, mention: Dict):
-            self.dismissNotification(mention.get("id"))
+```python
+class MyBot(MastoBot):
+    @handleMastodonExceptions
+    def processMention(self, mention: Dict):
+        self.dismissNotification(mention.get("id"))
 
-        @handleMastodonExceptions
-        def processReblog(self, reblog: Dict):
-            self.dismissNotification(reblog.get("id"))
+    @handleMastodonExceptions
+    def processReblog(self, reblog: Dict):
+        self.dismissNotification(reblog.get("id"))
 
-        @handleMastodonExceptions
-        def processFavourite(self, favourite: Dict):
-            self.dismissNotification(favourite.get("id"))
+    @handleMastodonExceptions
+    def processFavourite(self, favourite: Dict):
+        self.dismissNotification(favourite.get("id"))
 
-        @handleMastodonExceptions
-        def processFollow(self, follow: Dict):
-            self.dismissNotification(poll.get("id"))
+    @handleMastodonExceptions
+    def processFollow(self, follow: Dict):
+        self.dismissNotification(poll.get("id"))
 
-        @handleMastodonExceptions
-        def processPoll(self, poll: Dict):
-            self.dismissNotification(poll.get("id"))
+    @handleMastodonExceptions
+    def processPoll(self, poll: Dict):
+        self.dismissNotification(poll.get("id"))
 
-        @handleMastodonExceptions
-        def processFollowRequest(self, follow_request: Dict):
-            self.dismissNotification(follow_request.get("id"))
-    ```
+    @handleMastodonExceptions
+    def processFollowRequest(self, follow_request: Dict):
+        self.dismissNotification(follow_request.get("id"))
+```
 
 Then all that is left to do is run the `main` function
 
-    ```python
-    class MyBot(MastoBot):
-        ...
+```python
+class MyBot(MastoBot):
+    ...
 
-    if __name__ == "__main__":
-        # Your config is imported here. ConfigAccessor allows us to easily extend these files and get errors for incorrect and missing fields and values
-        config = ConfigAccessor("config.yml")
-        credentials = ConfigAccessor("credentials.yml")
+if __name__ == "__main__":
+    # Your config is imported here. ConfigAccessor allows us to easily extend these files and get errors for incorrect and missing fields and values
+    config = ConfigAccessor("config.yml")
+    credentials = ConfigAccessor("credentials.yml")
 
-        # Create an instance of your bot
-        bot = MyBot(credentials=credentials, config=config)
+    # Create an instance of your bot
+    bot = MyBot(credentials=credentials, config=config)
 
-        # Run the bot
-        bot.run()
-    ```
+    # Run the bot
+    bot.run()
+```
 
 As an example, here is an implementation for sending a welcoming message to all new followers:
 
-    ```python
-    def processFollow(self, follow: Dict):
-            # The follow notification is automatically passed as a parameter to this function
-            # We use this notification to get the account of the new follower
-            api_account = self.getAccount(follow.get("account"))
+```python
+def processFollow(self, follow: Dict):
+        # The follow notification is automatically passed as a parameter to this function
+        # We use this notification to get the account of the new follower
+        api_account = self.getAccount(follow.get("account"))
 
-            # We then get the username@domain value of the account
-            account = api_account.get("acct")
+        # We then get the username@domain value of the account
+        account = api_account.get("acct")
 
-            # We can then try to import a Jinja2 template
-            try:
-                file_loader = FileSystemLoader("templates")
-                env = Environment(loader=file_loader)
-                template = env.get_template("new_follow.txt")
-                output = template.render(account=account)
-            except Exception as e:
-                logging.critical("Error initializing template")
-                raise e
+        # We can then try to import a Jinja2 template
+        try:
+            file_loader = FileSystemLoader("templates")
+            env = Environment(loader=file_loader)
+            template = env.get_template("new_follow.txt")
+            output = template.render(account=account)
+        except Exception as e:
+            logging.critical("Error initializing template")
+            raise e
 
-            # The template can then be rendered
-            try:
-                self._api.status_post(status=output, visibility="direct")
-            except Exception as e:
-                logging.critical("Error posting Status")
-                raise e
+        # The template can then be rendered
+        try:
+            self._api.status_post(status=output, visibility="direct")
+        except Exception as e:
+            logging.critical("Error posting Status")
+            raise e
 
-            logging.info(f"Follow processed: {follow.get('id')}")
+        logging.info(f"Follow processed: {follow.get('id')}")
 
-            # Finally, we can dismiss the notification at the API level.
-            # This basically deletes the notification and this function will not be called for it again
-            self.dismissNotification(follow.get("id"))
-    ```
+        # Finally, we can dismiss the notification at the API level.
+        # This basically deletes the notification and this function will not be called for it again
+        self.dismissNotification(follow.get("id"))
+```
 
 Finally, you can simply run:
 
-    ```bash
-    docker-compose up -d --build
-    ```
+```bash
+docker-compose up -d --build
+```
 
 And your bot will be up and running in Docker!
