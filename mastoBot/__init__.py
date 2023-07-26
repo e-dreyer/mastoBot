@@ -5,7 +5,7 @@ __all__ = ["mastoBot", "configManager"]
 # Logging setup
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)-20s - [%(levelname)s] - %(module)s.%(funcName)-20s - %(message)-30s",
+    format="%(asctime)-25s - [%(levelname)s] - %(module)s.%(funcName)-30s - %(message)-50s",
 )
 
 # File logger
@@ -13,7 +13,7 @@ file_logger = logging.FileHandler("app.log", "w")
 file_logger.setLevel(logging.INFO)
 file_logger.setFormatter(
     logging.Formatter(
-        "%(asctime)-20s - [%(levelname)s] - %(module)s.%(funcName)-20s - %(message)-30s"
+        "%(asctime)-25s - [%(levelname)s] - %(module)s.%(funcName)-30s - %(message)-50s"
     )
 )
 
