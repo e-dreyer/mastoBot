@@ -244,10 +244,7 @@ class MastoBot(ABC):
     @handleMastodonExceptions
     def isParentStatus(self, status_id: int) -> bool:
         api_status = self.getStatus(status_id)
-        if api_status.get("in_reply_to_id"):
-            return False
-        else:
-            return True
+        return api_status.get("in_reply_to_id", False)
 
     @handleMastodonExceptions
     def isByFollower(self, status_id: int) -> bool:
