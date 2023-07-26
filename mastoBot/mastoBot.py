@@ -40,6 +40,7 @@ def handleMastodonExceptions(func) -> Callable:
             logging.critical(f"MastodonVersionError: {e}")
         except Exception as e:
             logging.critical(f"Error in function {func.__name__}")
+            logging.critical(e)
             raise e
     return wrapper
 
@@ -139,6 +140,8 @@ class MastoBot(ABC):
                 self.processPoll(notification)
             elif notification.get("type") == "follow_request":
                 self.processFollowRequest(notification)
+            elif notification.get("type") == "update":
+                self.processUpdate(notification)
             else:
                 logging.warning(f"❗ \t Invalid notification type: {notification.get('type')}")
 
@@ -208,9 +211,9 @@ class MastoBot(ABC):
         """
         try:
             self._api.status_reblog(status_id)
-            logging.info(f"🗣️ \t Status reblogged: {status_id}")
+            logging.info(f"🗣️ \t Status reblogged")
         except Exception as e:
-            logging.error(f"❗ \t Failed to reblog status: {status_id}")
+            logging.error(f"❗ \t Failed to reblog status")
             raise e
 
     @handleMastodonExceptions
@@ -233,9 +236,9 @@ class MastoBot(ABC):
         """
         try:
             self._api.status_favourite(status_id)
-            logging.info(f"⭐ \t Status favorited: {status_id}")
+            logging.info(f"⭐ \t Status favorited")
         except Exception as e:
-            logging.error(f"❗ \t Failed to favorite status: {status_id}")
+            logging.error(f"❗ \t Failed to favorite status")
             raise e
 
     @abstractmethod
@@ -260,4 +263,8 @@ class MastoBot(ABC):
 
     @abstractmethod
     def processFollowRequest(self, follow_request: Dict) -> None:
+        ...
+
+    @abstractmethod
+    def processUpdate(self, update: Dict) -> None:
         ...
