@@ -240,7 +240,23 @@ class MastoBot(ABC):
         except Exception as e:
             logging.error(f"❗ \t Failed to favorite status")
             raise e
+        
+    @handleMastodonExceptions
+    def isParentStatus(self, status_id: int) -> bool:
+        api_status = self.getStatus(status_id)
+        return api_status.get("in_reply_to_id", False)
 
+    @handleMastodonExceptions
+    def isByFollower(self, status_id: int) -> bool:
+        api_mention = self.getStatus(status_id)
+        return self.isFollower(api_mention.get("account"))
+
+    @handleMastodonExceptions
+    def isFollower(self, account_id: int) -> bool:
+        api_account = self.getAccount(account_id)
+        relationships = self._api.account_relationships(api_account.get("id"))
+        return relationships[0].get("followed_by", False)
+    
     @abstractmethod
     def processMention(self, mention: Dict) -> None:
         ...
