@@ -104,8 +104,7 @@ class MastoBot(ABC):
             raise e # This exception needs to be raised as it stops the bot from working
         
         try:
-            # self.r = redis.Redis(host='host.docker.internal', port=self.config.get("redis", {}).get("port", 6379), decode_responses=True)
-            self.r = redis.Redis(host='localhost', port=self.config.get("redis", {}).get("port", 6379), decode_responses=True)
+            self.r = redis.Redis(host=self.config.get("redis", {}).get("host", "localhost"), port=self.config.get("redis", {}).get("port", 6379), decode_responses=True)
             logging.info("✅ \t Redis initialized")
         except:
             logging.critical("❌ \t Redis failed to initialized")

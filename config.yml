@@ -1,5 +1,6 @@
 redis:
     port: 6379
+    host: host.docker.internal
 api:
     timeout: 10
 favorites:
