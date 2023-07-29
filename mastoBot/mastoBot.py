@@ -65,12 +65,6 @@ class MastoBot(ABC):
     credentials: ConfigAccessor
         The credentials used for API and database access of the user
     """
-    
-    DEFAULT_REFRESH_RATE = 10 
-    """
-    This is the refresh rate of the bot. The bot is rerun at this rate in seconds after every cycle.
-    """
-
     def __init__(self, config: ConfigAccessor, credentials: ConfigAccessor) -> None:
         """
         This is the initialization of MastoBot. It takes the config and credentials as parameters
@@ -86,9 +80,6 @@ class MastoBot(ABC):
         -------
         None
         """
-        
-        self.refresh_rate = self.DEFAULT_REFRESH_RATE
-        
         # Config and credentials are imported
         try:
             self.config = config
@@ -110,41 +101,10 @@ class MastoBot(ABC):
             logging.critical("❌ \t Mastodon.py failed to initialized")
             raise e # This exception needs to be raised as it stops the bot from working
 
-    @property
-    def refresh_rate(self):
-        """
-        Refresh rate of the bot. This is the period in seconds that should be waited between every loop
-        """
-        return self._refresh_rate
-    
-    @refresh_rate.setter
-    def refresh_rate(self, value):
-        """
-        Set the refresh rate of the bot
-        """
-        # The refresh rate cannot be negative
-        if value <= 0: 
-            logging.warning("❌ \t Refresh rate should be greater than 0")
-            raise ValueError("Refresh rate should be greater than 0")
-        
-        try:
-            logging.info(f"⌛ \t Refresh rate set to: {value}")
-            self._refresh_rate = int(value)
-        except Exception as e:
-            logging.warning("❌ \t Invalid refresh rate specified")
-            raise e
-    
     @handleMastodonExceptions
     def run(self):
-        """
-        This is the main loop of Mastobot and should be called by the user. It is automatically looped
-        and should only be called and not placed in a loop unless the user is using advanced exception handling
-        """
-        logging.info("⛏️ \t Starting main loop")
-        while True:
-            notifications = self._fetch_notifications() # Fetch the notifications
-            self._process_notifications(notifications) # Process the notifications
-            time.sleep(self.refresh_rate) # Sleep between loops
+        notifications = self._fetch_notifications() # Fetch the notifications
+        self._process_notifications(notifications) # Process the notifications
 
     @handleMastodonExceptions
     def _fetch_notifications(self):
