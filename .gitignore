@@ -16,3 +16,6 @@ config.yml
 
 templates/*
 main.py
+
+build/*
+MastoBot.py.egg-info/*

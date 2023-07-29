@@ -1,7 +1,7 @@
 version: "3.3"
 
 services:
-  mastodon-bot-worker:
+  mastobot-worker:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,7 +9,17 @@ services:
       - .:/app
     command: ["python3", "main.py"]
     networks:
-      - mastodon-bot-network
+      - mastobot-network
+
+  mastobot-redis:
+    image: "redis/redis-stack"
+    volumes:
+      - mastobot-redis-data:/data
+    networks:
+      - mastobot-network
+    ports:
+      - "${REDIS_PORT}:6379"
+      - "${REDIS_INSIGHT_PORT}:8001"
 
 networks:
-  mastodon-bot-network:
+  mastobot-network:

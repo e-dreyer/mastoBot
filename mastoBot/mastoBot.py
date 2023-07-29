@@ -1,6 +1,8 @@
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, AnyStr
+from jinja2 import Environment, FileSystemLoader
 import logging
 import time
+import redis
 from abc import ABC, abstractmethod
 from mastodon import (
     Mastodon,
@@ -100,12 +102,34 @@ class MastoBot(ABC):
         except Exception as e:
             logging.critical("❌ \t Mastodon.py failed to initialized")
             raise e # This exception needs to be raised as it stops the bot from working
+        
+        try:
+            # self.r = redis.Redis(host='host.docker.internal', port=self.config.get("redis", {}).get("port", 6379), decode_responses=True)
+            self.r = redis.Redis(host='localhost', port=self.config.get("redis", {}).get("port", 6379), decode_responses=True)
+            logging.info("✅ \t Redis initialized")
+        except:
+            logging.critical("❌ \t Redis failed to initialized")
+            raise e # This exception needs to be raised as it stops the bot from working
 
     @handleMastodonExceptions
     def run(self):
         notifications = self._fetch_notifications() # Fetch the notifications
         self._process_notifications(notifications) # Process the notifications
 
+    def localStoreSet(self, key: str, id: str, data: Dict) -> None:
+        self.r.hset(f"{key}:{id}", mapping={
+            **data
+        })
+        
+    def localStoreGet(self, key: str, id: str) -> Dict:
+        return self.r.hgetall(f"{key}:{id}")
+        
+    def localStoreExists(self, key: str, id: str) -> bool:
+        return self.r.exists(f"{key}:{id}")
+    
+    def localStoreDelete(self, key: str, id: str) -> None:
+        self.r.delete(f"{key}:{id}")
+        
     @handleMastodonExceptions
     def _fetch_notifications(self):
         """
@@ -327,6 +351,18 @@ class MastoBot(ABC):
         api_account = self.getAccount(account_id)
         relationships = self._api.account_relationships(api_account.get("id"))
         return relationships[0].get("followed_by", False)
+    
+    def getTemplate(self, file_name: str, data: Dict) -> AnyStr:
+        try:
+            file_loader = FileSystemLoader("templates")
+            env = Environment(loader=file_loader)
+            template = env.get_template(file_name)
+            output = template.render(**data)
+        except Exception as e:
+            logging.critical("❗ \t Error initializing template")
+            raise e
+
+        return output
     
     @abstractmethod
     def processMention(self, mention: Dict) -> None:
