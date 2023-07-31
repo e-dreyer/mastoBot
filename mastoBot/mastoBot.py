@@ -127,6 +127,28 @@ class MastoBot(ABC):
     def localStoreDelete(self, key: str, id: str) -> None:
         self.r.delete(f"{key}:{id}")
         
+    def localStoreKeyGetAll(self, key: str) -> List[str]:
+        # Use the SCAN command to get all keys matching the pattern
+        keys = []
+        cursor = 0
+        while True:
+            cursor, partial_keys = self.r.scan(cursor, match=f"{key}:*")
+            keys.extend(partial_keys)
+            if cursor == 0:
+                break
+
+        return keys
+
+    def localStoreObjectGetAll(self,key: str) -> List[Dict]:
+        keys = self.localStoreKeyGetAll(key)
+        objects = list()
+        for k in keys:
+            _key, _id = k.split(":")
+            objects.append(self.localStoreGet(_key, _id))
+            
+        return objects
+    
+        
     @handleMastodonExceptions
     def _fetch_notifications(self):
         """
