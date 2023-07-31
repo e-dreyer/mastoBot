@@ -507,7 +507,7 @@ class MastoBot(ABC):
                 }
                 
                 output = self.getTemplate(alt_text_required_config.get('missing_message').get('file'), template_data)
-                self._api.status_reply(self.getStatus(status_id), output)
+                self._api.status_reply(self.getStatus(status_id), output, visibility="direct")
                 
             return False
         return True
