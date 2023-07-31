@@ -3,15 +3,15 @@ redis:
     host: host.docker.internal
 api:
     timeout: 10
-favorites:
-    parents: true
-    children: true
-    followers_only: false
+favourites:
+    parents_only: false
+    followers_only: true
+    alt_text_required: true
 boosts:
-    parents: true
-    children: false
-    followers_only: false
-followers:
-    welcoming_message:
+    parents_only: true
+    followers_only: true
+    alt_text_required: true
+alt_text_required:
+    missing_message:
         enabled: true
-        file: 'new_follow.txt'
+        file: 'missing_alt_text.txt'
