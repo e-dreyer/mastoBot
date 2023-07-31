@@ -116,19 +116,76 @@ class MastoBot(ABC):
         self._process_notifications(notifications) # Process the notifications
 
     def localStoreSet(self, key: str, id: str, data: Dict) -> None:
+        """
+        Add a key value pair with a json data dict to the local store
+        
+        Parameters
+        ----------
+        key: str
+            The key of the store, i.e 'notifications'
+        id: str
+            The ID of the object
+        data: dict
+            Dictionary of the data to store as json
+        """
         self.r.json().set(f"{key}:{id}", "$", data)
         
     def localStoreGet(self, key: str, id: str) -> Dict:
+        """
+        Get a key value pair from the local store as a dict
+        
+        Parameters
+        ----------
+        key: str
+            The key of the stored data
+        id: str
+            The ID of the stored data
+
+        Returns
+        -------
+        Dict of the stored data
+        """
         return self.r.json().get(f"{key}:{id}")
         
     def localStoreExists(self, key: str, id: str) -> bool:
-        return self.r.exists(f"{key}:{id}")
+        """
+        Check whether a key exists
+        
+        Parameters
+        ----------
+        key: str
+            The key of the data
+        id: str
+            The ID of the data
+        """
+        return (self.r.exists(f"{key}:{id}") >= 1)
     
     def localStoreDelete(self, key: str, id: str) -> None:
+        """
+        Delete a key value pair from the local store
+        
+        Parameters
+        ----------
+        key: str
+            Key of the stored data
+        id: str
+            ID of the stored data
+        """
         self.r.delete(f"{key}:{id}")
         
     def localStoreKeyGetAll(self, key: str) -> List[str]:
-        # Use the SCAN command to get all keys matching the pattern
+        """
+        Get all of the keys matching the pattern
+        
+        Parameters
+        ----------
+        key: str
+            The key to check, i.e. "notification", "notification:*" will then be returned
+            
+        Returns
+        -------
+        List
+        """
         keys = []
         cursor = 0
         while True:
@@ -140,6 +197,18 @@ class MastoBot(ABC):
         return keys
 
     def localStoreObjectGetAll(self,key: str) -> List[Dict]:
+        """
+        Get all of the json objects stored with the given key
+        
+        Parameters
+        ----------
+        key: str
+            The key pattern to check, i.e. "notifications, will then return json data for all "notifications:*"
+            
+        Returns
+        -------
+        List
+        """
         keys = self.localStoreKeyGetAll(key)
         objects = list()
         for k in keys:
