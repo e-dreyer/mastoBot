@@ -452,6 +452,94 @@ class MastoBot(ABC):
 
         return output
     
+    def containsMedia(self, status_id: int) -> bool:
+        api_status = self.getStatus(status_id)
+        media_attachments = api_status.get('media_attachments', list())
+        return len(media_attachments) > 0
+    
+    def containsAltText(self, status_id: int) -> bool:
+        if not self.containsMedia(status_id):
+            return False
+        
+        api_status = self.getStatus(status_id)
+        media_attachments = api_status.get('media_attachments', list())
+        
+        for media_attachment in media_attachments:
+            description = media_attachment.get('description', None)
+            print("description: ", description)
+            if not description:
+                return False
+            
+        return True
+    
+    @handleMastodonExceptions
+    def shouldReblog(self, status_id: int) -> bool:
+        boostConfig = self.config.get("boosts")
+        
+        isFollower = self.isByFollower(status_id)
+        isFollowerRequired = boostConfig.get("followers_only")
+        
+        isParent = self.isParentStatus(status_id)
+        isParentRequired = boostConfig.get("parents_only")
+        
+        containsMedia = self.containsMedia(status_id)
+        hasAltText = self.containsAltText(status_id)
+        altTextRequired = boostConfig.get("alt_text_required")
+        
+        logging.info(f"isFollowerRequired: {isFollowerRequired} isFollower: {isFollower}")
+        if isFollowerRequired and not isFollower:
+            return False
+        
+        logging.info(f"isParentRequired: {isParentRequired} isParent: {isParent}")
+        if isParentRequired and not isParent:
+            return False
+        
+        logging.info(f"containsMedia: {containsMedia} altTextRequired: {altTextRequired} hasAltText: {hasAltText}")
+        if containsMedia and altTextRequired:
+            if hasAltText:
+                return True
+            
+            alt_text_required_config = self.config.get("alt_text_required")
+            
+            if (alt_text_required_config.get('missing_message').get('enabled')):
+                template_data = {
+                    "account": self.getStatus(status_id).get("account").get('acct')
+                }
+                
+                output = self.getTemplate(alt_text_required_config.get('missing_message').get('file'), template_data)
+                self._api.status_reply(self.getStatus(status_id), output)
+                
+            return False
+        return True
+
+    @handleMastodonExceptions
+    def shouldFavorite(self, status_id: int) -> bool:
+        favouriteConfig = self.config.get("favourites")
+        
+        isFollower = self.isByFollower(status_id)
+        isFollowerRequired = favouriteConfig.get("followers_only")
+        
+        isParent = self.isParentStatus(status_id)
+        isParentRequired = favouriteConfig.get("parents_only")
+        
+        containsMedia = self.containsMedia(status_id)
+        hasAltText = self.containsAltText(status_id)
+        altTextRequired = favouriteConfig.get("alt_text_required")
+        
+        logging.info(f"isFollowerRequired: {isFollowerRequired} isFollower: {isFollower}")
+        if isFollowerRequired and not isFollower:
+            return False
+        
+        logging.info(f"isParentRequired: {isParentRequired} isParent: {isParent}")
+        if isParentRequired and not isParent:
+            return False
+        
+        logging.info(f"containsMedia: {containsMedia} altTextRequired: {altTextRequired} hasAltText: {altTextRequired}")
+        if containsMedia and altTextRequired:
+            return hasAltText
+        
+        return True
+            
     @abstractmethod
     def processMention(self, mention: Dict) -> None:
         """
