@@ -116,12 +116,10 @@ class MastoBot(ABC):
         self._process_notifications(notifications) # Process the notifications
 
     def localStoreSet(self, key: str, id: str, data: Dict) -> None:
-        self.r.hset(f"{key}:{id}", mapping={
-            **data
-        })
+        self.r.json().set(f"{key}:{id}", "$", data)
         
     def localStoreGet(self, key: str, id: str) -> Dict:
-        return self.r.hgetall(f"{key}:{id}")
+        return self.r.json().get(f"{key}:{id}")
         
     def localStoreExists(self, key: str, id: str) -> bool:
         return self.r.exists(f"{key}:{id}")
