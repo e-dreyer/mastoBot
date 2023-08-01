@@ -3,6 +3,7 @@ from jinja2 import Environment, FileSystemLoader
 import logging
 import time
 import redis
+from redis.commands.json.path import Path
 from abc import ABC, abstractmethod
 from mastodon import (
     Mastodon,
@@ -146,6 +147,11 @@ class MastoBot(ABC):
         Dict of the stored data
         """
         return self.r.json().get(f"{key}:{id}")
+    
+    def localStoreMerge(self, key: str, id: str, new_data: Dict):
+        current = self.r.json().get(f"{key}:{id}")
+        current.update(new_data)
+        self.r.json().set(f"{key}:{id}", Path.root_path(), current, decode_keys=True)
         
     def localStoreExists(self, key: str, id: str) -> bool:
         """
