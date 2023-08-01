@@ -1,17 +1,20 @@
+# Redis server config
 redis:
-    port: 6379
-    host: host.docker.internal
+    port: 6379 # Port of the Redis server
+    host: host.docker.internal # IP of Redis server. (host.docker.internal for docker) (normal IP for CLI)
+
+# Mastodon.py settings
 api:
-    timeout: 10
+    timeout: 10 # API timeout
+
+# Behaviour to favourite posts
 favourites:
-    parents_only: false
-    followers_only: true
-    alt_text_required: true
+    parents_only: false # Must be parent
+    followers_only: true # Must be follower
+    alt_text_required: true # Must contain alt-text if media is present
+
+# Behaviour to boost posts
 boosts:
-    parents_only: true
-    followers_only: true
-    alt_text_required: true
-alt_text_required:
-    missing_message:
-        enabled: true
-        file: 'missing_alt_text.txt'
+    parents_only: true # Must be parent
+    followers_only: true # Must be follower
+    alt_text_required: true # Must contain alt-text if media is present

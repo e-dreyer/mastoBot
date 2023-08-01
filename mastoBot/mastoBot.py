@@ -452,11 +452,13 @@ class MastoBot(ABC):
 
         return output
     
+    @handleMastodonExceptions
     def containsMedia(self, status_id: int) -> bool:
         api_status = self.getStatus(status_id)
         media_attachments = api_status.get('media_attachments', list())
         return len(media_attachments) > 0
     
+    @handleMastodonExceptions
     def containsAltText(self, status_id: int) -> bool:
         if not self.containsMedia(status_id):
             return False
@@ -466,7 +468,6 @@ class MastoBot(ABC):
         
         for media_attachment in media_attachments:
             description = media_attachment.get('description', None)
-            print("description: ", description)
             if not description:
                 return False
             
@@ -496,20 +497,8 @@ class MastoBot(ABC):
         
         logging.info(f"containsMedia: {containsMedia} altTextRequired: {altTextRequired} hasAltText: {hasAltText}")
         if containsMedia and altTextRequired:
-            if hasAltText:
-                return True
-            
-            alt_text_required_config = self.config.get("alt_text_required")
-            
-            if (alt_text_required_config.get('missing_message').get('enabled')):
-                template_data = {
-                    "account": self.getStatus(status_id).get("account").get('acct')
-                }
-                
-                output = self.getTemplate(alt_text_required_config.get('missing_message').get('file'), template_data)
-                self._api.status_reply(self.getStatus(status_id), output, visibility="direct")
-                
-            return False
+            return hasAltText
+        
         return True
 
     @handleMastodonExceptions
@@ -534,12 +523,23 @@ class MastoBot(ABC):
         if isParentRequired and not isParent:
             return False
         
-        logging.info(f"containsMedia: {containsMedia} altTextRequired: {altTextRequired} hasAltText: {altTextRequired}")
+        logging.info(f"containsMedia: {containsMedia} altTextRequired: {altTextRequired} hasAltText: {hasAltText}")
         if containsMedia and altTextRequired:
             return hasAltText
         
         return True
-            
+    
+    @handleMastodonExceptions
+    def altTextTestPassed(self, status_id: int, config: str) -> bool:
+        containsMedia = self.containsMedia(status_id)
+        hasAltText = self.containsAltText(status_id)
+        altTextRequired = self.config.get(config).get("alt_text_required")
+        
+        if containsMedia and altTextRequired:
+            return hasAltText
+        
+        return True
+         
     @abstractmethod
     def processMention(self, mention: Dict) -> None:
         """
