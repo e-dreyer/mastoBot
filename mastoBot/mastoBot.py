@@ -2,7 +2,10 @@ from typing import List, Dict, Callable, AnyStr
 from jinja2 import Environment, FileSystemLoader
 import logging
 import time
+import json
+import datetime
 import redis
+import asyncio
 from redis.commands.json.path import Path
 from abc import ABC, abstractmethod
 from mastodon import (
@@ -18,7 +21,6 @@ from mastodon import (
 )
 
 from .configManager import *
-
 
 def handleMastodonExceptions(func) -> Callable:
     """
@@ -49,6 +51,16 @@ def handleMastodonExceptions(func) -> Callable:
             logging.critical(e)
             raise e
     return wrapper
+
+def toSerializableDict(data: Dict) -> Dict:
+    json_data = json.dumps(data, default=serialize_datetime)
+    new_data = json.loads(json_data)
+    return new_data
+
+def serialize_datetime(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    raise TypeError("Type not serializable")
 
 class MastoBot(ABC):
     """
@@ -112,9 +124,11 @@ class MastoBot(ABC):
             raise e # This exception needs to be raised as it stops the bot from working
 
     @handleMastodonExceptions
-    def run(self):
-        notifications = self._fetch_notifications() # Fetch the notifications
-        self._process_notifications(notifications) # Process the notifications
+    async def run(self):
+        while True:
+            notifications = await self.notificationRefresher() # Fetch the notifications
+            self._process_notifications(notifications) # Process the notifications
+            await asyncio.sleep(10)
 
     def localStoreSet(self, key: str, id: str, data: Dict) -> None:
         """
@@ -223,14 +237,14 @@ class MastoBot(ABC):
             
         return objects
     
-        
     @handleMastodonExceptions
-    def _fetch_notifications(self):
+    async def notificationRefresher(self):
         """
         Fetch the notifications of the bot's account
         """
+        logging.info(f'👀 \t Checking for notifications...')
         notifications = self._api.notifications()
-        logging.debug(f"📬 \t {len(notifications)} Notifications fetched")
+        logging.info(f"📬 \t {len(notifications)} Notifications fetched")
         return notifications
 
     @handleMastodonExceptions
@@ -396,7 +410,7 @@ class MastoBot(ABC):
         """
         try:
             self._api.status_favourite(status_id)
-            logging.info(f"⭐ \t Status favorited")
+            logging.info(f"⭐ \t Status favourited")
         except Exception as e:
             logging.error(f"❗ \t Failed to favorite status")
             raise e
