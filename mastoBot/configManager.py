@@ -1,7 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, TypedDict
 import yaml
 from collections import UserDict
-
 
 class ConfigAccessor(UserDict):
     def __init__(self, file_name: str) -> None:
