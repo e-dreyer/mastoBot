@@ -20,6 +20,7 @@ from mastodon import (
     MastodonVersionError,
 )
 
+from .helpers import *
 from .configManager import *
 
 def handleMastodonExceptions(func) -> Callable:
@@ -51,16 +52,6 @@ def handleMastodonExceptions(func) -> Callable:
             logging.critical(e)
             raise e
     return wrapper
-
-def toSerializableDict(data: Dict) -> Dict:
-    json_data = json.dumps(data, default=serialize_datetime)
-    new_data = json.loads(json_data)
-    return new_data
-
-def serialize_datetime(obj):
-    if isinstance(obj, datetime.datetime):
-        return obj.isoformat()
-    raise TypeError("Type not serializable")
 
 class MastoBot(ABC):
     """
@@ -253,23 +244,24 @@ class MastoBot(ABC):
         Process the notifications by type
         """
         for notification in notifications:
-            if notification.get("type") == "mention":
-                self.processMention(notification)
-            elif notification.get("type") == "reblog":
-                self.processReblog(notification)
-            elif notification.get("type") == "favourite":
-                self.processFavourite(notification)
-            elif notification.get("type") == "follow":
-                self.processFollow(notification)
-            elif notification.get("type") == "poll":
-                self.processPoll(notification)
-            elif notification.get("type") == "follow_request":
-                self.processFollowRequest(notification)
-            elif notification.get("type") == "update":
-                self.processUpdate(notification)
-            else:
-                logging.warning(f"❗ \t Invalid notification type: {notification.get('type')}")
-
+            match notification.get("type"):
+                case "mention":
+                    self.processMention(notification)
+                case "reblog":
+                    self.processReblog(notification)
+                case "favourite":
+                    self.processFavourite(notification)
+                case "follow":
+                    self.processFollow(notification)
+                case "poll":
+                    self.processPoll(notification)
+                case "follow_request":
+                    self.processFollowRequest(notification)
+                case "update":
+                    self.processUpdate(notification)
+                case _:
+                    logging.warning(f"❗ \t Invalid notification type: {notification.get('type')}")
+                
     @handleMastodonExceptions
     def getAccount(self, account_id: int) -> Dict:
         """
@@ -461,6 +453,21 @@ class MastoBot(ABC):
         return relationships[0].get("followed_by", False)
     
     def getTemplate(self, file_name: str, data: Dict) -> AnyStr:
+        """
+        Render the Jinja2 template in the file with file_name using the provided data and 
+        return a string
+        
+        Parameters
+        ----------
+        file_name: str
+            The name of the Jinja2 file in the ./templates directory
+        data: Dict
+            Dictionary containing the data to be used by the template
+            
+        Returns
+        -------
+        AnyStr rendered template
+        """
         try:
             file_loader = FileSystemLoader("templates")
             env = Environment(loader=file_loader)
@@ -471,27 +478,6 @@ class MastoBot(ABC):
             raise e
 
         return output
-    
-    @handleMastodonExceptions
-    def containsMedia(self, status_id: int) -> bool:
-        api_status = self.getStatus(status_id)
-        media_attachments = api_status.get('media_attachments', list())
-        return len(media_attachments) > 0
-    
-    @handleMastodonExceptions
-    def containsAltText(self, status_id: int) -> bool:
-        if not self.containsMedia(status_id):
-            return False
-        
-        api_status = self.getStatus(status_id)
-        media_attachments = api_status.get('media_attachments', list())
-        
-        for media_attachment in media_attachments:
-            description = media_attachment.get('description', None)
-            if not description:
-                return False
-            
-        return True
     
     @handleMastodonExceptions
     def shouldReblog(self, status_id: int) -> bool:
@@ -547,6 +533,27 @@ class MastoBot(ABC):
         if containsMedia and altTextRequired:
             return hasAltText
         
+        return True
+    
+    @handleMastodonExceptions
+    def containsMedia(self, status_id: int) -> bool:
+        api_status = self.getStatus(status_id)
+        media_attachments = api_status.get('media_attachments', list())
+        return len(media_attachments) > 0
+    
+    @handleMastodonExceptions
+    def containsAltText(self, status_id: int) -> bool:
+        if not self.containsMedia(status_id):
+            return False
+        
+        api_status = self.getStatus(status_id)
+        media_attachments = api_status.get('media_attachments', list())
+        
+        for media_attachment in media_attachments:
+            description = media_attachment.get('description', None)
+            if not description:
+                return False
+            
         return True
     
     @handleMastodonExceptions
