@@ -1,27 +1,65 @@
-from typing import List, Dict, Callable, AnyStr
-from jinja2 import Environment, FileSystemLoader
+#########################################################################
+#                               Imports                                 #
+#########################################################################
+#region Imports
+# Import Python logging library
 import logging
-import time
-import json
-import datetime
-import redis
-import asyncio
-from redis.commands.json.path import Path
-from abc import ABC, abstractmethod
-from mastodon import (
-    Mastodon,
-    MastodonIllegalArgumentError,
-    MastodonFileNotFoundError,
-    MastodonNetworkError,
-    MastodonAPIError,
-    MastodonMalformedEventError,
-    MastodonRatelimitError,
-    MastodonServerError,
-    MastodonVersionError,
-)
 
-from .helpers import *
-from .configManager import *
+# Importing default Python libraries
+try:
+    from typing import Callable
+    import asyncio
+    from abc import ABC, abstractmethod
+except:
+    logging.critical('Failed to load default Python libraries. These are required for the main implementation')
+    raise
+
+# Import Jinja2
+try:
+    from jinja2 import Environment, FileSystemLoader
+except:
+    logging.critical('Failed to load Jinja2, this is required by the templating system')
+    raise
+
+# Import Redis
+try:
+    import redis
+    from redis.commands.json.path import Path
+except:
+    logging.critical('Failed to import the required Redis libraries. This is required for the database functionality')
+    raise
+
+# Import Mastodon.py
+try:
+    from mastodon import (
+        Mastodon,
+        MastodonIllegalArgumentError,
+        MastodonFileNotFoundError,
+        MastodonNetworkError,
+        MastodonAPIError,
+        MastodonMalformedEventError,
+        MastodonRatelimitError,
+        MastodonServerError,
+        MastodonVersionError,
+    )
+except:
+    logging.critical('Failed to load the Mastodon.py library, which is required for all API calls')
+    raise
+
+# Import custom libraries
+try:
+    from .helpers import *
+    from .configManager import *
+except:
+    logging.critical('Failed to load custom libraries required by the implementation')
+    raise
+
+#endregion Imports
+
+#########################################################################
+#                          Exception Handling                           #
+#########################################################################
+#region ExceptionHandling
 
 def handleMastodonExceptions(func) -> Callable:
     """
@@ -52,6 +90,13 @@ def handleMastodonExceptions(func) -> Callable:
             logging.critical(e)
             raise e
     return wrapper
+
+#endregion ExceptionHandling
+
+#########################################################################
+#                               MastoBot                                #
+#########################################################################
+#region MastoBot
 
 class MastoBot(ABC):
     """
@@ -121,7 +166,9 @@ class MastoBot(ABC):
             self._process_notifications(notifications) # Process the notifications
             await asyncio.sleep(10)
 
-    def localStoreSet(self, key: str, id: str, data: Dict) -> None:
+    #region localStoreFunctions
+    
+    def localStoreSet(self, key: str, id: str, data: dict) -> None:
         """
         Add a key value pair with a json data dict to the local store
         
@@ -132,11 +179,11 @@ class MastoBot(ABC):
         id: str
             The ID of the object
         data: dict
-            Dictionary of the data to store as json
+            dictionary of the data to store as json
         """
         self.r.json().set(f"{key}:{id}", "$", data)
         
-    def localStoreGet(self, key: str, id: str) -> Dict:
+    def localStoreGet(self, key: str, id: str) -> dict:
         """
         Get a key value pair from the local store as a dict
         
@@ -149,11 +196,11 @@ class MastoBot(ABC):
 
         Returns
         -------
-        Dict of the stored data
+        dict of the stored data
         """
         return self.r.json().get(f"{key}:{id}")
     
-    def localStoreMerge(self, key: str, id: str, new_data: Dict):
+    def localStoreMerge(self, key: str, id: str, new_data: dict):
         current = self.r.json().get(f"{key}:{id}")
         current.update(new_data)
         self.r.json().set(f"{key}:{id}", Path.root_path(), current, decode_keys=True)
@@ -184,7 +231,7 @@ class MastoBot(ABC):
         """
         self.r.delete(f"{key}:{id}")
         
-    def localStoreKeyGetAll(self, key: str) -> List[str]:
+    def localStoreKeyGetAll(self, key: str) -> list[str]:
         """
         Get all of the keys matching the pattern
         
@@ -207,7 +254,7 @@ class MastoBot(ABC):
 
         return keys
 
-    def localStoreObjectGetAll(self,key: str) -> List[Dict]:
+    def localStoreObjectGetAll(self,key: str) -> list[dict]:
         """
         Get all of the json objects stored with the given key
         
@@ -228,8 +275,12 @@ class MastoBot(ABC):
             
         return objects
     
+    #endregion localStoreFunctions
+    
+    #region notificationProcessing
+    
     @handleMastodonExceptions
-    async def notificationRefresher(self):
+    async def notificationRefresher(self) -> list[dict]:
         """
         Fetch the notifications of the bot's account
         """
@@ -239,7 +290,7 @@ class MastoBot(ABC):
         return notifications
 
     @handleMastodonExceptions
-    def _process_notifications(self, notifications: List[Dict[Any, Any]]) -> None:
+    def _process_notifications(self, notifications: list[dict[Any, Any]]) -> None:
         """
         Process the notifications by type
         """
@@ -261,9 +312,13 @@ class MastoBot(ABC):
                     self.processUpdate(notification)
                 case _:
                     logging.warning(f"❗ \t Invalid notification type: {notification.get('type')}")
-                
+          
+    #endregion notificationProcessing
+         
+    #region generalPurposeApiCalls
+           
     @handleMastodonExceptions
-    def getAccount(self, account_id: int) -> Dict:
+    def getAccount(self, account_id: int) -> dict:
         """
         Get information of the account by id
         
@@ -275,14 +330,14 @@ class MastoBot(ABC):
         return self._api.account(account_id)
 
     @handleMastodonExceptions
-    def getMe(self) -> Dict:
+    def getMe(self) -> dict:
         """
         Get information of the bot's account
         """
         return self._api.me()
 
     @handleMastodonExceptions
-    def getStatus(self, status_id: int) -> Dict:
+    def getStatus(self, status_id: int) -> dict:
         """
         Get the status information as per the API
         
@@ -294,14 +349,14 @@ class MastoBot(ABC):
         return self._api.status(status_id)
 
     @handleMastodonExceptions
-    def getStatusContext(self, status_id: int) -> Dict:
+    def getStatusContext(self, status_id: int) -> dict:
         """
         Get the context of the Status from 
         """
         return self._api.status_context(status_id)
 
     @handleMastodonExceptions
-    def getStatusRebloggedBy(self, status_id: int) -> List[Dict]:
+    def getStatusRebloggedBy(self, status_id: int) -> list[dict]:
         """
        Get all of the users that reblogged a Status 
        
@@ -313,7 +368,7 @@ class MastoBot(ABC):
         return self._api.status_reblogged_by(status_id)
 
     @handleMastodonExceptions
-    def getStatusFavouritedBy(self, status_id: int) -> List[Dict]:
+    def getStatusFavouritedBy(self, status_id: int) -> list[dict]:
         """
         Get all the users that favourited a Status
         
@@ -325,14 +380,14 @@ class MastoBot(ABC):
         return self._api.status_favourited_by(status_id)
 
     @handleMastodonExceptions
-    def getNotifications(self) -> List[Dict]:
+    def getNotifications(self) -> list[dict]:
        """
        Get all notifications from the API
        """ 
        return self._api.notifications()
 
     @handleMastodonExceptions
-    def getAccountStatuses(self) -> List[Dict]:
+    def getAccountStatuses(self) -> list[dict]:
         """
         Get all account statuses 
         
@@ -406,7 +461,11 @@ class MastoBot(ABC):
         except Exception as e:
             logging.error(f"❗ \t Failed to favorite status")
             raise e
-        
+      
+    #endregion generalPurposeApiCalls
+      
+    #region helperFunctions
+      
     @handleMastodonExceptions
     def isParentStatus(self, status_id: int) -> bool:
         """
@@ -452,7 +511,7 @@ class MastoBot(ABC):
         relationships = self._api.account_relationships(api_account.get("id"))
         return relationships[0].get("followed_by", False)
     
-    def getTemplate(self, file_name: str, data: Dict) -> AnyStr:
+    def getTemplate(self, file_name: str, data: dict) -> str:
         """
         Render the Jinja2 template in the file with file_name using the provided data and 
         return a string
@@ -461,8 +520,8 @@ class MastoBot(ABC):
         ----------
         file_name: str
             The name of the Jinja2 file in the ./templates directory
-        data: Dict
-            Dictionary containing the data to be used by the template
+        data: dict
+            dictionary containing the data to be used by the template
             
         Returns
         -------
@@ -566,94 +625,100 @@ class MastoBot(ABC):
             return hasAltText
         
         return True
+       
+    #endregion helperFunctions
          
+    #region processingAbstractMethods
+    
     @abstractmethod
-    def processMention(self, mention: Dict) -> None:
+    def processMention(self, mention: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        mention: Dict
+        mention: dict
         
         """
         ...
 
     @abstractmethod
-    def processReblog(self, reblog: Dict) -> None:
+    def processReblog(self, reblog: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        reblog: Dict
+        reblog: dict
         
         """
         ...
 
     @abstractmethod
-    def processFavourite(self, favourite: Dict) -> None:
+    def processFavourite(self, favourite: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        favourite: Dict
+        favourite: dict
         
         """
         ...
 
     @abstractmethod
-    def processFollow(self, follow: Dict) -> None:
+    def processFollow(self, follow: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        follow: Dict
+        follow: dict
         
         """
         ...
 
     @abstractmethod
-    def processPoll(self, poll: Dict) -> None:
+    def processPoll(self, poll: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        poll: Dict
+        poll: dict
         
         """
         ...
 
     @abstractmethod
-    def processFollowRequest(self, follow_request: Dict) -> None:
+    def processFollowRequest(self, follow_request: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        followe_request: Dict
+        followe_request: dict
         
         """
         ...
 
     @abstractmethod
-    def processUpdate(self, update: Dict) -> None:
+    def processUpdate(self, update: dict) -> None:
         """
         Abstract function that should be implemented by the user, which is called for every notification of the type.
         The notification is pass to the function automatically
         
         Parameters
         ----------
-        update: Dict
+        update: dict
         
         """
         ...
+    #endregion processingAbstractMethods
+#endregion MastoBot
