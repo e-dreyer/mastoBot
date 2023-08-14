@@ -105,7 +105,7 @@ AccountDict = TypedDict('AccountDict', {
     'discoverable': None | bool,  # Can be None for remote users
     'group': bool,
     'locked': bool,
-    'created_at': datetime,  # You might want to use a more specific datetime type here
+    'created_at': Any,  # You might want to use a more specific datetime type here
     'following_count': int,
     'followers_count': int,
     'statuses_count': int,
@@ -131,7 +131,7 @@ StatusDict = TypedDict('StatusDict', {
     'in_reply_to_account_id': int, # Numerical id of the account this toot is in response to
     'reblog': None | Any, # Denotes whether the toot is a reblog. If so, set to the original toot dict.
     'content': str, # Content of the toot, as HTML: '<p>Hello from Python</p>'
-    'created_at': datetime,# Creation time
+    'created_at': Any,# Creation time
     'reblogs_count': int, # Number of reblogs
     'favourites_count': int, # Number of favourites
     'reblogged': bool, # Denotes whether the logged in user has boosted this toot
