@@ -7,9 +7,10 @@ import logging
 
 # Importing default Python libraries
 try:
-    from typing import Callable
+    from typing import Callable, Dict, Any, NewType, TypedDict, Literal
     import asyncio
     from abc import ABC, abstractmethod
+    from datetime import datetime
 except:
     logging.critical('Failed to load default Python libraries. These are required for the main implementation')
     raise
@@ -55,6 +56,110 @@ except:
     raise
 
 #endregion Imports
+
+#########################################################################
+#                               Types                                   #
+#########################################################################
+#region Types
+
+StatusVisibility = Literal['public', 'unlisted', 'private', 'direct']
+
+StatusEditDict = NewType('StatusEditDict', Dict[str, Any])
+MentionDict = NewType('MentionDict', Dict[str, Any])
+ScheduledStatusDict = NewType('ScheduledStatusDict', Dict[str, Any])
+PollDict = NewType('PollDict', Dict[str, Any])
+ConversationDict = NewType('ConversationDict', Dict[str, Any])
+HashtagDict = NewType('HashtagDict', Dict[str, Any])
+HashtagUsageHistoryDict = NewType('HashtagUsageHistoryDict', Dict[str, Any])
+EmojiDict = NewType('EmojiDict', Dict[str, Any])
+ApplicationDict = NewType('ApplicationDict', Dict[str, Any])
+RelationshipDict = NewType('RelationshipDict', Dict[str, Any])
+FilterDict = NewType('FilterDict', Dict[str, Any])
+NotificationDict = NewType('NotificationDict', Dict[str, Any])
+ContextDict = NewType('ContextDict', Dict[str, Any])
+ListDict = NewType('ListDict', Dict[str, Any])
+MediaDict = NewType('MediaDict', Dict[str, Any])
+CardDict = NewType('CardDict', Dict[str, Any])
+SearchResultDict = NewType('SearchResultDict', Dict[str, Any])
+InstanceDict = NewType('InstanceDict', Dict[str, Any])
+ActivityDict = NewType('ActivityDict', Dict[str, Any])
+ReportDict = NewType('ReportDict', Dict[str, Any])
+PushSubscriptionDict = NewType('PushSubscriptionDict', Dict[str, Any])
+PushNotificationDict = NewType('PushNotificationDict', Dict[str, Any])
+PreferenceDict = NewType('PreferenceDict', Dict[str, Any])
+FeaturedTagDict = NewType('FeaturedTagDict', Dict[str, Any])
+ReadMarkerDict = NewType('ReadMarkerDict', Dict[str, Any])
+AnnouncementDict = NewType('AnnouncementDict', Dict[str, Any])
+FamiliarFollowerDict = NewType('FamiliarFollowerDict', Dict[str, Any])
+AdminAccountDict = NewType('AdminAccountDict', Dict[str, Any])
+AdminDomainBlockDict = NewType('AdminDomainBlockDict', Dict[str, Any])
+AdminMeasureDict = NewType('AdminMeasureDict', Dict[str, Any])
+AdminDimensionDict = NewType('AdminDimensionDict', Dict[str, Any])
+AdminRetentionDict = NewType('AdminRetentionDict', Dict[str, Any])
+
+AccountDict = TypedDict('AccountDict', {
+    'id': int,
+    'username': str,
+    'acct': str,
+    'display_name': str,
+    'discoverable': None | bool,  # Can be None for remote users
+    'group': bool,
+    'locked': bool,
+    'created_at': datetime,  # You might want to use a more specific datetime type here
+    'following_count': int,
+    'followers_count': int,
+    'statuses_count': int,
+    'note': str,
+    'url': str,
+    'avatar': str,
+    'header': str,
+    'avatar_static': str,
+    'header_static': str,
+    'source': dict[str, Any],  # This might have a more specific type
+    'moved_to_account': None | 'AccountDict',  # This might have a more specific type
+    'bot': bool,
+    'fields': list[dict[str, Any]],  # List of dicts with name, value, and possibly verified_at
+    'emojis': list[dict],  # List of dicts with custom emoji information
+})
+    
+StatusDict = TypedDict('StatusDict', {
+    'id': int, # Numerical id of this toot
+    'uri': str, # Descriptor for the toot
+    'url': str, # URL of the toot
+    'account': AccountDict, # User dict for the account which posted the status
+    'in_reply_to_id': int, # Numerical id of the toot this toot is in response to
+    'in_reply_to_account_id': int, # Numerical id of the account this toot is in response to
+    'reblog': None | 'StatusDict', # Denotes whether the toot is a reblog. If so, set to the original toot dict.
+    'content': str, # Content of the toot, as HTML: '<p>Hello from Python</p>'
+    'created_at': datetime,# Creation time
+    'reblogs_count': int, # Number of reblogs
+    'favourites_count': int, # Number of favourites
+    'reblogged': bool, # Denotes whether the logged in user has boosted this toot
+    'favourited': bool, # Denotes whether the logged in user has favourited this toot
+    'sensitive': bool, # Denotes whether media attachments to the toot are marked sensitive
+    'spoiler_text': str,# Warning text that should be displayed before the toot content
+    'visibility': StatusVisibility, # Toot visibility ('public', 'unlisted', 'private', or 'direct')
+    'mentions': list[AccountDict], # A list of users dicts mentioned in the toot, as Mention dicts
+    'media_attachments': list[Any], # A list of media dicts of attached files
+    'emojis': list[EmojiDict], # A list of custom emojis used in the toot, as Emoji dicts
+    'tags': list[HashtagDict], # A list of hashtag used in the toot, as Hashtag dicts
+    'bookmarked': bool, # True if the status is bookmarked by the logged in user, False if not.
+    'application': None | ApplicationDict, # Application dict for the client used to post the toot (Does not federate
+                   # and is therefore always None for remote toots, can also be None for
+                   # local toots for some legacy applications).
+    'language': str, # The language of the toot, if specified by the server,
+                # as ISO 639-1 (two-letter) language code.
+    'muted': bool, # Boolean denoting whether the user has muted this status by
+             # way of conversation muting
+    'pinned': bool,# Boolean denoting whether or not the status is currently pinned for the
+              # associated account.
+    'replies_count': int,# The number of replies to this status.
+    'card': CardDict, # A preview card for links from the status, if present at time of delivery,
+            # as card dict.
+    'poll': PollDict,# A poll dict if a poll is attached to this status.
+})
+
+#endregion Types
 
 #########################################################################
 #                          Exception Handling                           #
@@ -157,7 +262,7 @@ class MastoBot(ABC):
             logging.info("✅ \t Redis initialized")
         except:
             logging.critical("❌ \t Redis failed to initialized")
-            raise e # This exception needs to be raised as it stops the bot from working
+            raise # This exception needs to be raised as it stops the bot from working
 
     @handleMastodonExceptions
     async def run(self):
@@ -200,7 +305,19 @@ class MastoBot(ABC):
         """
         return self.r.json().get(f"{key}:{id}")
     
-    def localStoreMerge(self, key: str, id: str, new_data: dict):
+    def localStoreMerge(self, key: str, id: str, new_data: dict) -> None:
+        """
+        Merge the new_data dictionary with the existing data in the data store with the given key
+        
+        Parameters
+        ----------
+        key: str
+            The key for the local store
+        id: str
+            The ID for the record in the local store
+        new_data: dict
+            The new data dictionary to merge with or update local existing data
+        """
         current = self.r.json().get(f"{key}:{id}")
         current.update(new_data)
         self.r.json().set(f"{key}:{id}", Path.root_path(), current, decode_keys=True)
@@ -318,7 +435,7 @@ class MastoBot(ABC):
     #region generalPurposeApiCalls
            
     @handleMastodonExceptions
-    def getAccount(self, account_id: int) -> dict:
+    def getAccount(self, account_id: int) -> AccountDict:
         """
         Get information of the account by id
         
@@ -326,18 +443,28 @@ class MastoBot(ABC):
         ----------
         account_id: int
             ID of the account as per the API
+            
+        Returns
+        -------
+        dict:
+            Dictionary of the new account
         """
         return self._api.account(account_id)
 
     @handleMastodonExceptions
-    def getMe(self) -> dict:
+    def getMe(self) -> AccountDict:
         """
         Get information of the bot's account
+        
+        Returns
+        -------
+        dict:
+            Dictionary of the bot's account
         """
         return self._api.me()
 
     @handleMastodonExceptions
-    def getStatus(self, status_id: int) -> dict:
+    def getStatus(self, status_id: int) -> StatusDict:
         """
         Get the status information as per the API
         
@@ -345,18 +472,16 @@ class MastoBot(ABC):
         ----------
         status_id: int
             The ID of the status as provided by the API
+            
+        Returns
+        -------
+        dict:
+            Dictionary of the status
         """
         return self._api.status(status_id)
 
     @handleMastodonExceptions
-    def getStatusContext(self, status_id: int) -> dict:
-        """
-        Get the context of the Status from 
-        """
-        return self._api.status_context(status_id)
-
-    @handleMastodonExceptions
-    def getStatusRebloggedBy(self, status_id: int) -> list[dict]:
+    def getStatusRebloggedBy(self, status_id: int) -> list[AccountDict]:
         """
        Get all of the users that reblogged a Status 
        
@@ -368,7 +493,7 @@ class MastoBot(ABC):
         return self._api.status_reblogged_by(status_id)
 
     @handleMastodonExceptions
-    def getStatusFavouritedBy(self, status_id: int) -> list[dict]:
+    def getStatusFavouritedBy(self, status_id: int) -> list[AccountDict]:
         """
         Get all the users that favourited a Status
         
@@ -380,14 +505,14 @@ class MastoBot(ABC):
         return self._api.status_favourited_by(status_id)
 
     @handleMastodonExceptions
-    def getNotifications(self) -> list[dict]:
+    def getNotifications(self) -> list[NotificationDict]:
        """
        Get all notifications from the API
        """ 
        return self._api.notifications()
 
     @handleMastodonExceptions
-    def getAccountStatuses(self) -> list[dict]:
+    def getAccountStatuses(self) -> list[AccountDict]:
         """
         Get all account statuses 
         
@@ -540,7 +665,7 @@ class MastoBot(ABC):
     
     @handleMastodonExceptions
     def shouldReblog(self, status_id: int) -> bool:
-        boostConfig = self.config.get("boosts")
+        boostConfig = self.config["boosts"]
         
         isFollower = self.isByFollower(status_id)
         isFollowerRequired = boostConfig.get("followers_only")
@@ -568,7 +693,7 @@ class MastoBot(ABC):
 
     @handleMastodonExceptions
     def shouldFavorite(self, status_id: int) -> bool:
-        favouriteConfig = self.config.get("favourites")
+        favouriteConfig = self.config["favourites"]
         
         isFollower = self.isByFollower(status_id)
         isFollowerRequired = favouriteConfig.get("followers_only")
@@ -619,7 +744,7 @@ class MastoBot(ABC):
     def altTextTestPassed(self, status_id: int, config: str) -> bool:
         containsMedia = self.containsMedia(status_id)
         hasAltText = self.containsAltText(status_id)
-        altTextRequired = self.config.get(config).get("alt_text_required")
+        altTextRequired = self.config[config].get("alt_text_required")
         
         if containsMedia and altTextRequired:
             return hasAltText
@@ -703,7 +828,7 @@ class MastoBot(ABC):
         
         Parameters
         ----------
-        followe_request: dict
+        follow_request: dict
         
         """
         ...
