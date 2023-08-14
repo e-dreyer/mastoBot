@@ -116,7 +116,7 @@ AccountDict = TypedDict('AccountDict', {
     'avatar_static': str,
     'header_static': str,
     'source': dict[str, Any],  # This might have a more specific type
-    'moved_to_account': None | 'AccountDict',  # This might have a more specific type
+    'moved_to_account': None | Any,  # This might have a more specific type
     'bot': bool,
     'fields': list[dict[str, Any]],  # List of dicts with name, value, and possibly verified_at
     'emojis': list[dict],  # List of dicts with custom emoji information
@@ -129,7 +129,7 @@ StatusDict = TypedDict('StatusDict', {
     'account': AccountDict, # User dict for the account which posted the status
     'in_reply_to_id': int, # Numerical id of the toot this toot is in response to
     'in_reply_to_account_id': int, # Numerical id of the account this toot is in response to
-    'reblog': None | 'StatusDict', # Denotes whether the toot is a reblog. If so, set to the original toot dict.
+    'reblog': None | Any, # Denotes whether the toot is a reblog. If so, set to the original toot dict.
     'content': str, # Content of the toot, as HTML: '<p>Hello from Python</p>'
     'created_at': datetime,# Creation time
     'reblogs_count': int, # Number of reblogs
