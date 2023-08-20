@@ -7,8 +7,7 @@ FROM arm32v7/python:3.10-slim
 WORKDIR /app
 
 # Updates and default installs
-RUN apt update && apt-get update && pip install --upgrade pip && apt-get install -y git
-RUN apt update && apt-get update && apt-get install -y build-essential python3-dev git
+RUN apt update && apt-get update && pip install --upgrade pip && apt-get install -y build-essential python3-dev git
 
 # Copy the requirements file and .env file to the container
 COPY requirements.txt .
