@@ -10,22 +10,8 @@ services:
     command: ["python3", "main.py"]
     networks:
       - mastobot-network
-    depends_on:
-      - mastobot-redis
 
-  mastobot-redis:
-    image: "arm32v7/redis"
-    volumes:
-      - mastobot-redis-data:/data
-    networks:
-      - mastobot-network
-    ports:
-      - "${REDIS_PORT}:6379"
-      - "${REDIS_INSIGHT_PORT}:8001"
 
-volumes:
-  mastobot-redis-data:
-    driver: local
 
 networks:
   mastobot-network:

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Use the official Python base image
-FROM arm32v7/python:3.10-slim
+FROM arm32v7/python:3.12-slim
 
 # Set the working directory in the container
 WORKDIR /app

@@ -1,6 +1,7 @@
-from typing import Dict, Callable
 import datetime
 import json
+from collections.abc import Callable
+
 
 def serialize_datetime(obj):
     """
@@ -10,12 +11,13 @@ def serialize_datetime(obj):
         return obj.isoformat()
     raise TypeError("Type not serializable")
 
-def toSerializableDict(data: Dict, serializer: Callable = serialize_datetime) -> Dict:
+
+def toSerializableDict(data: dict, serializer: Callable = serialize_datetime) -> dict:
     """
-    Takes a Python dictionary and serializes it to JSON and then converts it back to 
+    Takes a Python dictionary and serializes it to JSON and then converts it back to
     a Python dictionary, using the default serializer or a custom one. This helps to serialize date_time
     objects
-    
+
     Parameters
     ----------
     data: Dict

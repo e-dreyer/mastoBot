@@ -1,7 +1,5 @@
-# Redis server config
-redis:
-    port: 6379 # Port of the Redis server
-    host: host.docker.internal # IP of Redis server. (host.docker.internal for docker) (normal IP for CLI)
+# Database config
+database: mastoBot.db # Path to the SQLite database
 
 # Mastodon.py settings
 api:

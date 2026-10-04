@@ -1,18 +1,19 @@
-from typing import List, Dict
-from jinja2 import Environment, FileSystemLoader
 import logging
 import re
 
+from jinja2 import Environment, FileSystemLoader
 from mastoBot.configManager import ConfigAccessor
+
 from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
+
 
 class MyBot(MastoBot):
     @handleMastodonExceptions
-    def processUpdate(self, notification: Dict):
+    def processUpdate(self, notification: dict):
         pass
     
     @handleMastodonExceptions
-    def processMention(self, mention: Dict):
+    def processMention(self, mention: dict):
         # Get the content from the mention
         content = self.getStatus(mention.get("status")).get("content")
 
@@ -72,15 +73,15 @@ class MyBot(MastoBot):
         self.dismissNotification(mention.get("id"))
 
     @handleMastodonExceptions
-    def processReblog(self, reblog: Dict):
+    def processReblog(self, reblog: dict):
         self.dismissNotification(reblog.get("id"))
 
     @handleMastodonExceptions
-    def processFavourite(self, favourite: Dict):
+    def processFavourite(self, favourite: dict):
         self.dismissNotification(favourite.get("id"))
 
     @handleMastodonExceptions
-    def processFollow(self, follow: Dict):
+    def processFollow(self, follow: dict):
         # Get latest account from the Mastodon API
         api_account = self.getAccount(follow.get("account"))
         account = api_account.get("acct")
@@ -105,11 +106,11 @@ class MyBot(MastoBot):
         self.dismissNotification(follow.get("id"))
 
     @handleMastodonExceptions
-    def processPoll(self, poll: Dict):
+    def processPoll(self, poll: dict):
         self.dismissNotification(poll.get("id"))
 
     @handleMastodonExceptions
-    def processFollowRequest(self, follow_request: Dict):
+    def processFollowRequest(self, follow_request: dict):
         self.dismissNotification(follow_request.get("id"))
 
     @handleMastodonExceptions
@@ -132,12 +133,7 @@ class MyBot(MastoBot):
         isByFollower = self.isByFollower(status_id)
         boostConfig = self.config["boosts"]
 
-        if isParentStatus and boostConfig["parents"]:
-            if boostConfig["followers_only"]:
-                return isByFollower
-            else:
-                return True
-        elif not isParentStatus and boostConfig["children"]:
+        if isParentStatus and boostConfig["parents"] or not isParentStatus and boostConfig["children"]:
             if boostConfig["followers_only"]:
                 return isByFollower
             else:
@@ -151,12 +147,7 @@ class MyBot(MastoBot):
         isByFollower = self.isByFollower(status_id)
         favoriteConfig = self.config["favorites"]
 
-        if isParentStatus and favoriteConfig["parents"]:
-            if favoriteConfig["followers_only"]:
-                return isByFollower
-            else:
-                return True
-        elif not isParentStatus and favoriteConfig["children"]:
+        if isParentStatus and favoriteConfig["parents"] or not isParentStatus and favoriteConfig["children"]:
             if favoriteConfig["followers_only"]:
                 return isByFollower
             else:

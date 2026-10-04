@@ -11,15 +11,5 @@ services:
     networks:
       - mastobot-network
 
-  mastobot-redis:
-    image: "redis/redis-stack"
-    volumes:
-      - mastobot-redis-data:/data
-    networks:
-      - mastobot-network
-    ports:
-      - "${REDIS_PORT}:6379"
-      - "${REDIS_INSIGHT_PORT}:8001"
-
 networks:
   mastobot-network:
