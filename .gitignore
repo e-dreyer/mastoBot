@@ -19,3 +19,4 @@ main.py
 
 build/*
 MastoBot.py.egg-info/*
+uv.lock
